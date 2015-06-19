@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  
+  
+  <title>API Design Principles</title>
+  
+  
+  <style>
+@media print {
+  html { margin: 0 !important; }
+  body { font-family: serif; }
+  th, td { font-family: inherit; }
+  a { color: inherit !important; }
+  .example:before { font-family: serif !important; }
+  a:link, a:visited { text-decoration: none !important; }
+  a:link:after, a:visited:after { /* create a cross-ref "see..." */; }
+}
+@page {
+  margin: 1.5cm 1.1cm;
+}
+h1, h2, h3, h4, h5, h6 { page-break-after: avoid; }
+figure, div.figure, div.sidefigure, pre, table.propdef, table.propdef-extra,
+.example { page-break-inside: avoid; }
+dt { page-break-after: avoid; }
+
+body {
+  background: white;
+  /* background-image: floating-margin-image-goes-here; */
+  background-position: top left;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  color: black;
+  counter-reset: exampleno figure issue;
+  font-family: sans-serif;
+  line-height: 1.5;
+  margin: 0 auto;
+  max-width: 50em;
+  padding: 2em 1em 2em 70px;
+}
+
+/* General structural markup */
+
+h1, h2, h3, h4, h5, h6 { text-align: left; }
+h1, h2, h3 { color: #005A9C; }
+h1 { font: 170% sans-serif; }
+h2 { font: 140% sans-serif; }
+h3 { font: 120% sans-serif; }
+h4 { font: bold 100% sans-serif; }
+h5 { font: italic 100% sans-serif; }
+h6 { font: small-caps 100% sans-serif; }
+h2, h3, h4, h5, h6 { margin-top: 3em; }
+h1 + h2 { margin-top: 0em; }
+h2 + h3, h3 + h4, h4 + h5, h5 + h6 { margin-top: 1.2em; }
+
+.head { margin-bottom: 1em; }
+.head h1 { margin-top: 2em; clear: both; }
+.head table { margin-left: 2em; margin-top: 2em; }
+.head dd { margin-bottom: 0; }
+
+p.copyright { font-size: small; }
+p.copyright small { font-size: small; }
+
+pre { margin: 1em 0 1em 2em; overflow: auto; }
+pre, code, .idl-code {
+  font-size: .9em;
+  font-family: Menlo, Consolas, "DejaVu Sans Mono", monospace;
+}
+pre .idl-code, pre code { font-size: 1em; }
+dt dfn code { font-size: inherit; }
+
+dfn { font-weight: bolder; }
+dfn var { font-style: normal; }
+
+s, del {text-decoration: line-through; color: red; }
+u, ins {text-decoration: underline; background: #bfa; }
+
+sup {
+  vertical-align: super;
+  font-size: 80%
+}
+
+details { display: block; }
+
+dt { font-weight: bold; }
+dd { margin: 0 0 1em 2em; }
+ul, ol { margin-left: 0; padding-left: 2em; }
+li { margin: 0.25em 2em 0.5em 0; padding-left: 0; }
+[data-md] > :first-child { margin-top: 0; }
+[data-md] > :last-child { margin-bottom: 0; }
+
+td.pre {
+  white-space: pre-wrap;
+}
+
+.css, .property { color: #005a9c; }
+.property { white-space: nowrap; }
+
+
+/* Boilerplate sections */
+
+ul.indexlist { margin-left: 0; columns: 13em; }
+ul.indexlist li { margin-left: 0; list-style: none }
+ul.indexlist li li { margin-left: 1em; }
+ul.indexlist a { font-weight: bold; }
+ul.indexlist ul, ul.indexlist dl { font-size: smaller; }
+ul.indexlist dl { margin-top: 0; }
+ul.indexlist dt { margin: .2em 0 .2em 20px; }
+ul.indexlist dd { margin: .2em 0 .2em 40px; }
+
+.toc {
+  font-weight: bold;
+  line-height: 1.3;
+  list-style: none;
+  margin: 1em 0 0 5em;
+  padding: 0;
+}
+.toc ul { margin: 0; padding: 0; font-weight: normal; }
+.toc ul ul { margin: 0 0 0 2em; font-style: italic; }
+.toc ul ul ul { margin: 0}
+.toc > li { margin: 1.5em 0; padding: 0; }
+.toc li { clear: both; }
+.toc ul.toc li { margin: 0.3em 0 0 0; }
+.toc a { border-bottom-style: none; }
+.toc a:hover, ul.toc a:focus { border-bottom-style: solid; }
+/* Section numbers in a column of their own */
+.toc span.secno {float: left; width: 4em; margin-left: -5em}
+.toc ul ul span.secno { margin-left: -7em; }
+
+table.proptable {
+  font-size: small;
+  border-collapse: collapse;
+  border-spacing: 0;
+  text-align: left;
+  margin: 1em 0;
+}
+table.proptable td, table.proptable th {
+  padding: 0.4em;
+  text-align: center;
+}
+table.proptable tr:hover td { background: #DEF; }
+
+
+/* Links */
+
+a[href] { color: inherit; border-bottom: 1px solid silver; text-decoration: none; }
+a[href]:hover { background: #ffa; }
+a[href]:active { color: #C00; background: transparent; }
+img, a.logo { border-style: none; }
+.heading, .issue, .note, .example, li, dt { position: relative; }
+/* CSS-ish link types */
+[data-link-type="property"]::before,
+[data-link-type="propdesc"]::before,
+[data-link-type="descriptor"]::before,
+[data-link-type="value"]::before,
+[data-link-type="function"]::before,
+[data-link-type="at-rule"]::before,
+[data-link-type="selector"]::before,
+[data-link-type="maybe"]::before {content: "“";}
+[data-link-type="property"]::after,
+[data-link-type="propdesc"]::after,
+[data-link-type="descriptor"]::after,
+[data-link-type="value"]::after,
+[data-link-type="function"]::after,
+[data-link-type="at-rule"]::after,
+[data-link-type="selector"]::after,
+[data-link-type="maybe"]::after {content: "”";}
+[data-link-type].production::before,
+[data-link-type].production::after,
+.prod [data-link-type]::before,
+.prod [data-link-type]::after { content: ""; }
+/* Element-type link styling */
+[data-link-type=element] { font-family: monospace; }
+[data-link-type=element]::before { content: "<" }
+[data-link-type=element]::after { content: ">" }
+/* Self-links */
+a.self-link {
+  position: absolute;
+  top: 0;
+  left: -2.5em;
+  width: 2em;
+  height: 2em;
+  text-align: center;
+  border: none;
+  transition: opacity .2s;
+  opacity: .5;
+}
+a.self-link:hover {
+  opacity: 1;
+}
+.heading > a.self-link {
+  font-size: 83%;
+}
+li > a.self-link {
+  left: -3.5em;
+}
+dfn > a.self-link {
+  top: auto;
+  left: auto;
+  opacity: 0;
+  width: 1.5em;
+  height: 1.5em;
+  background: gray;
+  color: white;
+  font-style: normal;
+  transition: opacity .2s, background-color .2s, color .2s;
+}
+dfn:hover > a.self-link {
+  opacity: 1;
+}
+dfn > a.self-link:hover {
+  color: black;
+}
+a.self-link::before { content: "¶"; }
+.heading > a.self-link::before { content: "§"; }
+dfn > a.self-link::before { content: "#"; }
+
+
+/* Figures */
+
+figure {
+  display: block;
+  text-align: center;
+  margin: 2.5em 0;
+}
+figure.sidefigure {
+  float: right;
+  width: 50%;
+  margin: 0 0 0.5em 0.5em
+}
+figure pre {
+  text-align: left;
+  display: table;
+  margin: 1em auto;
+}
+figure table {
+  margin: auto;
+}
+figure img, figure object {
+  display: block;
+  margin: auto;
+  max-width: 100%
+}
+figcaption {
+  counter-increment: figure;
+  font-size: 90%;
+  font-style: italic;
+  text-align: center;
+}
+figcaption::before {
+  content: "Figure " counter(figure) ". ";
+  font-weight: bold;
+}
+dd figure { margin-left: -2em; }
+
+
+/* Definition tables */
+
+table.definition {
+  border-spacing: 0;
+  padding: 0 1em 0.5em;
+  width: 100%;
+  table-layout: fixed;
+  margin: 1.2em 0;
+}
+table.definition td, table.definition th {
+  padding: 0.5em;
+  vertical-align: baseline;
+  border-bottom: 1px solid #bbd7e9;
+}
+table.definition th:first-child {
+  font-style: italic;
+  font-weight: normal;
+  text-align: left;
+  width: 8.3em;
+  padding-left: 1em;
+}
+table.definition > tbody > tr:last-child > th,
+table.definition > tbody > tr:last-child > td {
+  border-bottom: none;
+}
+table.definition tr:first-child > th,
+table.definition tr:first-child > td {
+  padding-top: 1em;
+}
+/* Footnotes at the bottom of a definition table */
+table.definition td.footnote {
+  font-style: normal;
+  padding-top: .6em;
+  width: auto;
+}
+table.definition td.footnote::before {
+  content: " ";
+  display: block;
+  height: 0.6em;
+  width: 4em;
+  border-top: thin solid;
+}
+
+
+/* IDL fragments */
+
+pre.idl {
+  padding: .5em 1em;
+  margin: 1.2em 0;
+}
+pre.idl :link, pre.idl :visited {
+  color:inherit;
+  background:transparent;
+}
+
+
+/* Data tables */
+/* Comes in plain, long, complex, or define varieties */
+
+.data {
+  margin: 1em auto;
+  border-collapse: collapse;
+  width: 100%;
+  border: hidden;
+}
+.data {
+  text-align: center;
+  width: auto;
+}
+.data caption {
+  width: 100%;
+}
+.data td, .data th {
+  padding: 0.5em;
+  border-width: 1px;
+  border-color: silver;
+  border-top-style: solid;
+}
+.data thead td:empty {
+  padding: 0;
+  border: 0;
+}
+.data thead th[scope="row"] {
+  text-align: right;
+  color: inherit;
+}
+.data thead,
+.data tbody {
+  color: inherit;
+  border-bottom: 2px solid;
+}
+.data colgroup {
+  border-left: 2px solid;
+}
+.data tbody th:first-child,
+.data tbody td[scope="row"]:first-child {
+  text-align: right;
+  color: inherit;
+  border-right: 2px solid;
+  border-top: 1px solid silver;
+  padding-right: 1em;
+}
+.data.define td:last-child {
+  text-align: left;
+}
+.data tbody th[rowspan],
+.data tbody td[rowspan] {
+  border-left: 1px solid silver;
+}
+.data tbody th[rowspan]:first-child,
+.data tbody td[rowspan]:first-child {
+  border-left: 0;
+  border-right: 1px solid silver;
+}
+.data.complex th,
+.data.complex td {
+  border: 1px solid silver;
+}
+.data td.long {
+ vertical-align: baseline;
+ text-align: left;
+}
+.data img {
+  vertical-align: middle;
+}
+
+
+/* Switch/case <dl>s */
+
+dl.switch {
+ padding-left: 2em;
+}
+dl.switch > dt {
+ text-indent: -1.5em;
+}
+dl.switch > dt:before {
+ content: '↪';
+ padding: 0 0.5em 0 0;
+ display: inline-block;
+ width: 1em;
+ text-align: right;
+ line-height: 0.5em;
+}
+
+
+/* Style for At Risk features (intended as editorial aid, not intended for publishing) */
+.atrisk::before {
+ position: absolute;
+ margin-left: -5em;
+ margin-top: -2px;
+ padding: 4px;
+ border: 1px solid;
+ content: 'At risk';
+ font-size: small;
+ background-color: white;
+ color: gray;
+ border-radius: 1em;
+ text-align: center;
+}
+
+
+/* Obsoletion notice */
+details.annoying-warning[open] {
+  background: #fdd;
+  color: red;
+  font-weight: bold;
+  text-align: center;
+  padding: .5em;
+  border: thick solid red;
+  border-radius: 1em;
+  position: fixed;
+  left: 1em;
+  right: 1em;
+  bottom: 1em;
+  z-index: 1000;
+}
+details.annoying-warning:not([open]) > summary {
+  background: #fdd;
+  color: red;
+  font-weight: bold;
+  text-align: center;
+  padding: .5em;
+}
+
+
+/* Examples */
+
+.example {
+  counter-increment: exampleno;
+}
+.example::before {
+  content: "Example";
+  content: "Example " counter(exampleno);
+  min-width: 7.5em;
+  text-transform: uppercase;
+  display: block;
+}
+.illegal-example::before {
+  content: "Invalid Example";
+  content: "Invalid Example" counter(exampleno);
+}
+.example, .illegal-example, .html, .illegal-html, .xml, .illegal-xml {
+  padding: 0.5em;
+  margin: 1em 0;
+  position: relative;
+  clear: both;
+}
+pre.example, pre.illegal-example, pre.html,
+pre.illegal-html, pre.xml, pre.illegal-xml {
+  padding-top: 1.5em;
+}
+.illegal-example { color: red; }
+.illegal-example p { color: black; }
+.html { color: #600; }
+.illegal-html { color: red; }
+.illegal-html p { color: black; }
+.xml { color: #600; }
+.illegal-xml { color: red; }
+.illegal-xml p { color: black; }
+code.css { font-family: inherit; font-size: 100% }
+code.html { color: #600 } /* inline HTML */
+code.xml { color: #600 }  /* inline XML */
+
+
+/* Issues */
+
+.issue {
+  border-color: #E05252;
+  background: #FBE9E9;
+  counter-increment: issue;
+}
+.issue:before {
+  content: "Issue " counter(issue);
+  padding-right: 1em;
+  text-transform: uppercase;
+  color: #E05252;
+}
+
+
+/* Whys */
+
+details.why > summary {
+  font-style: italic;
+}
+details.why[open] > summary {
+  border-bottom: 1px silver solid;
+}
+
+
+/* All the blocks get similarly styled */
+
+table.definition, pre.idl, .example, .note, details.why, .issue {
+  border: none;
+  border-left: .5em solid black;
+  border-left: .5rem solid black;
+}
+.issue, .note, .example, .why {
+  padding: .5em;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+table.definition, pre.idl {
+  background: hsl(210, 70%, 95%);
+  border-color: hsl(210, 80%, 75%);
+}
+.example {
+  background: hsl(50, 70%, 95%);
+  border-color: hsl(50, 70%, 60%);
+}
+.example::before,
+.example > .marker {
+  color: hsl(50, 70%, 60%);
+}
+.note, details.why {
+  background: hsl(120, 70%, 95%);
+  border-color: hsl(120, 70%, 60%);
+}
+.note::before,
+.note > .marker {
+  color: hsl(120, 70%, 60%);
+}
+.issue {
+  background: hsl(0, 70%, 95%);
+  border-color: hsl(0, 70%, 60%);
+}
+.issue::before,
+.issue > .marker {
+  color: hsl(0, 70%, 60%);
+}
+span.issue, span.note {
+  padding: .1em .5em .15em;
+  border-right-width: .5em;
+  border-right-style: solid;
+}
+.example.no-marker::before,
+.issue.no-marker::before,
+.note.no-marker::before,
+.no-marker::before {
+  content: none;
+}
+
+  </style>
+  
+
+  <meta content="Bikeshed 1.0.0" name="generator">
+ </head>
+ 
+
+ <body class="h-entry">
+
+  <div class="head">
+  
+   <p data-fill-with="logo"></p>
+  
+   <h1 class="p-name no-ref" id="title">API Design Principles</h1>
+  
+   <h2 class="no-num no-toc no-ref heading settled" id="subtitle"><span class="content">A Collection of Interesting Ideas,
+    <time class="dt-updated" datetime="2015-06-19">19 June 2015</time></span></h2>
+  
+   <div data-fill-with="spec-metadata">
+    <dl>
+     <dt>This version:
+     <dd><a class="u-url" href="https://w3ctag.github.io/design-principles">https://w3ctag.github.io/design-principles</a>
+     <dt class="editor">Editor:
+     <dd class="editor p-author h-card vcard"><a class="p-name fn u-url url" href="https://domenic.me/">Domenic Denicola</a> (<a class="p-org org" href="https://www.google.com/">Google</a>) <a class="u-email email" href="mailto:d@domenic.me">d@domenic.me</a>
+     <dt>Participate:
+     <dd><span><a href="https://github.com/w3ctag/design-principles">GitHub w3ctag/design-principles</a> (<a href="https://github.com/w3ctag/design-principles/issues/new">file an issue</a>; <a href="https://github.com/w3ctag/design-principles/issues?state=open">open issues</a>)</span>
+     <dd><span></span>
+    </dl>
+   </div>
+  
+   <div data-fill-with="warning"></div>
+  
+   <p class="copyright" data-fill-with="copyright"><a href="http://creativecommons.org/publicdomain/zero/1.0/" rel="license"><img alt="CC0" src="https://licensebuttons.net/p/zero/1.0/80x15.png"></a>
+To the extent possible under law, the editors have waived all copyright
+and related or neighboring rights to this work.
+In addition, as of 19 June 2015,
+the editors have made this specification available under the
+<a href="http://www.openwebfoundation.org/legal/the-owf-1-0-agreements/owfa-1-0" rel="license">Open Web Foundation Agreement Version 1.0</a>,
+which is available at http://www.openwebfoundation.org/legal/the-owf-1-0-agreements/owfa-1-0.
+Parts of this work may be from another specification document.  If so, those parts are instead covered by the license of that specification document.
+</p>
+  
+   <hr title="Separator for header">
+</div>
+
+
+  <h2 class="no-num no-toc no-ref heading settled" id="abstract"><span class="content">Abstract</span></h2>
+
+  <div class="p-summary" data-fill-with="abstract">
+   <p>This document contains a small-but-growing set of design principles collected by the W3C TAG while <a href="https://github.com/w3ctag/spec-reviews/">reviewing</a> specifications.</p>
+
+</div>
+
+  <div data-fill-with="at-risk"></div>
+
+
+  <h2 class="no-num no-toc no-ref heading settled" id="contents"><span class="content">Table of Contents</span></h2>
+
+  <div data-fill-with="table-of-contents" role="navigation">
+   <ul class="toc" role="directory">
+    <li><a href="#js"><span class="secno">1</span> <span class="content">JavaScript Language</span></a>
+     <ul class="toc">
+      <li><a href="#js-only"><span class="secno">1.1</span> <span class="content">Web APIs are for JavaScript</span></a>
+      <li><a href="#js-rtc"><span class="secno">1.2</span> <span class="content">Preserve run-to-completion semantics</span></a>
+      <li><a href="#js-gc"><span class="secno">1.3</span> <span class="content">Do not expose garbage collection</span></a>
+     </ul>
+    <li><a href="#types-and-units"><span class="secno">2</span> <span class="content">Types and Units</span></a>
+     <ul class="toc">
+      <li><a href="#numeric-types"><span class="secno">2.1</span> <span class="content">Use numeric types appropriately</span></a>
+      <li><a href="#milliseconds"><span class="secno">2.2</span> <span class="content">Use milliseconds for time measurement</span></a>
+     </ul>
+    <li><a href="#conformance"><span class="secno"></span> <span class="content">
+Conformance</span></a>
+    <li><a href="#index"><span class="secno"></span> <span class="content">Index</span></a>
+     <ul class="toc">
+      <li><a href="#index-defined-elsewhere"><span class="secno"></span> <span class="content">Terms defined by reference</span></a>
+     </ul>
+    <li><a href="#references"><span class="secno"></span> <span class="content">References</span></a>
+     <ul class="toc">
+      <li><a href="#normative"><span class="secno"></span> <span class="content">Normative References</span></a>
+     </ul>
+   </ul></div>
+
+  <main>
+
+
+
+   <h2 class="heading settled" data-level="1" id="js"><span class="secno">1. </span><span class="content">JavaScript Language</span><a class="self-link" href="#js"></a></h2>
+
+
+   <h3 class="heading settled" data-level="1.1" id="js-only"><span class="secno">1.1. </span><span class="content">Web APIs are for JavaScript</span><a class="self-link" href="#js-only"></a></h3>
+
+
+   <p>The language that web APIs are meant to be used in, and specified for, is JavaScript (also known as <a data-link-type="biblio" href="#biblio-ecmascript">[ECMASCRIPT]</a>). They are not language-agnostic, and are not meant to be.</p>
+
+
+   <p>This is sometimes a confusing point because <a data-link-type="biblio" href="#biblio-webidl">[WEBIDL]</a> descended from the language-agnostic OMG IDL. Even today, the structure of the document contains a confusing and redundant division between the "Interface definition language" and the "ECMAScript binding". Rest assured that this division is simply a historical artifact of document structure, and does not imply anything about the intent of Web IDL in general. The only reason it remains is that nobody has taken the time to eradicate it.</p>
+
+
+   <p>As such, when designing your APIs, your primary concern should be with the interface you present to JavaScript authors. You can freely rely upon language-specific semantics and conventions, with no need to keep things generalized.</p>
+
+
+   <h3 class="heading settled" data-level="1.2" id="js-rtc"><span class="secno">1.2. </span><span class="content">Preserve run-to-completion semantics</span><a class="self-link" href="#js-rtc"></a></h3>
+
+
+   <p>Web APIs are essentially vehicles for extruding C++-authored capabilities into the JavaScript code that authors write. As such, it’s important to respect the invariants that are in play in normal JavaScript code. One of the most important of these is <em>run-to-completion semantics</em>, wherein each turn of the JavaScript event loop is processed completely before returning control to the user agent.</p>
+
+
+   <p>In particular, this means that JavaScript functions cannot be preempted mid-execution, and thus that any data observed within the function will stay constant as long as that function is active. This is not the case in other languages, which allow data races via multithreading or other techniques—a C function can be preempted at any time, with the bindings it has access to changing values from one line to the next.</p>
+
+
+   <p>This no-data-races invariant is relied upon extensively in JavaScript programs, and must never be violated—even by web APIs, which are often implemented in languages that <em>do</em> allow data races. Although the user agent may be using threads or other techniques to modify state <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/infrastructure.html#in-parallel">in parallel</a>, web APIs must never expose such changing state directly to authors. Instead, they should <a data-link-type="dfn" href="https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task">queue a task</a> to modify author-observable state (such as an object property).</p>
+
+
+   <h3 class="heading settled" data-level="1.3" id="js-gc"><span class="secno">1.3. </span><span class="content">Do not expose garbage collection</span><a class="self-link" href="#js-gc"></a></h3>
+
+
+   <p>There must not be a way for author code to tell when/if garbage collection of JavaScript objects has run.</p>
+
+
+   <p>The reason for this is somewhat subtle. If garbage collection timing were observable, then authors could easily write code relying on specific garbage collection timing. But this timing is almost certainly not the same across user agents, which means the resulting code will be non-interoperable. Worse, according to the usual rules of browser game theory, this kind of scenario could force other user agents to copy the garbage collection timing of the original, in order to create interoperability. This would cause our current garbage collection strategies to ossify, preventing improvement in one of the most dynamic areas of JavaScript virtual machine technology.</p>
+
+
+   <p>In particular, this means that you can’t expose any API that acts as a weak reference, e.g. with a property that becomes <code>null</code> once garbage collection runs. Such freeing of memory must be entirely deterministic.</p>
+
+
+   <div class="note" role="note">
+    There is some speculative discussion of exposing weak references such that their finalization is only observable between event loop turns (see <a href="http://wiki.ecmascript.org/doku.php?id=strawman:weak_references">strawman:weak_references</a> and <a href="http://wiki.ecmascript.org/doku.php?id=strawman:weak_refs">strawman:weak_refs</a>). However, these proposals have no active champions, and nobody knows if they are feasible or even desirable.
+</div>
+
+
+   <h2 class="heading settled" data-level="2" id="types-and-units"><span class="secno">2. </span><span class="content">Types and Units</span><a class="self-link" href="#types-and-units"></a></h2>
+
+
+   <h3 class="heading settled" data-level="2.1" id="numeric-types"><span class="secno">2.1. </span><span class="content">Use numeric types appropriately</span><a class="self-link" href="#numeric-types"></a></h3>
+
+
+   <p><a data-link-type="biblio" href="#biblio-webidl">[WEBIDL]</a>, because of its OMG IDL heritage, has a plethora of numeric types. However, it is very rare that its more specific ones are actually appropriate.</p>
+
+
+   <p>Remember that JavaScript itself only has one numeric type, Number: IEEE 754 double-precision floating point, including ±0, ±Infinity, and NaN (although thankfully only one). The Web IDL "types" are simply conversion rules that apply when accepting an argument or triggering a setter. For example, a Web IDL <code>unsigned short</code> roughly says: "when someone passes this as an argument, take it modulo 65535 before doing any further processing". That is very rarely a useful thing to do.</p>
+
+
+   <p>Instead, you probably want to stick with one of:</p>
+
+
+   <ul>
+    
+    <li><code>unrestricted double</code>: when truly any JavaScript number will do, including infinities and NaN
+    
+    <li><code>double</code>: any JavaScript number excluding infinities and NaN
+    
+    <li><code>[EnforceRange] long long</code>: any JavaScript number in the integer-representable range, throwing a <code>TypeError</code> outside the range and rounding inside of it
+    
+    <li><code>[EnforceRange] unsigned long long</code>: any nonnegative JavaScript number in the integer-representable range, throwing a <code>TypeError</code> outside the range and rounding inside of it
+</ul>
+
+
+   <p>Additionally, you can combine any of the above with an extra line in your algorithm to validate that the number is within the expected domain-specific range, and throwing or performing other actions in response. (While it is very rarely appropriate to modify author input by taking it modulo 65535, it might be appropriate to take it modulo 360, for example.)</p>
+
+
+   <p>A special case of domain-specific validation, which Web IDL already has you covered for, is the 0–255 range. This can be written as <code>[EnforcedRange] octet</code>: any JavaScript number in the range 0–255, throwing a <code>TypeError</code> outside the range and rounding inside of it. (And indeed, if it turns out that the other power-of-two ranges are semantically meaningful for your domain, such that you want the modulo or range-checking behavior, feel free to use them.)</p>
+
+
+   <div class="note" role="note">
+    Those coming from other languages should carefully note that despite their names, <code>long long</code> and <code>unsigned long long</code> only have 53 bits of precision, and not 64.
+</div>
+
+
+   <h3 class="heading settled" data-level="2.2" id="milliseconds"><span class="secno">2.2. </span><span class="content">Use milliseconds for time measurement</span><a class="self-link" href="#milliseconds"></a></h3>
+
+
+   <p>Any web API that accepts a time measurement should do so in milliseconds. This is a tradition stemming from <code>setTimeout</code> and the <code>Date</code> API, and carried through since then.</p>
+
+
+   <p>Even if seconds (or some other unit) are more natural in the domain of an API, sticking with milliseconds ensures interoperability with the rest of the platform, allowing easy arithmetic with other time quantities.</p>
+
+
+   <p>Note that high-resolution time is usually represented as fractional milliseconds, not e.g. as nanoseconds.</p>
+
+</main>
+
+  <h2 class="no-ref no-num heading settled" id="conformance"><span class="content">
+Conformance</span><a class="self-link" href="#conformance"></a></h2>
+
+    
+  <p>
+        Conformance requirements are expressed with a combination of descriptive assertions and RFC 2119 terminology.
+        The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”, “MAY”, and “OPTIONAL”
+        in the normative parts of this document
+        are to be interpreted as described in RFC 2119.
+        However, for readability,
+        these words do not appear in all uppercase letters in this specification.
+
+    </p>
+  <p>
+        All of the text of this specification is normative
+        except sections explicitly marked as non-normative, examples, and notes. <a data-link-type="biblio" href="#biblio-rfc2119">[RFC2119]</a>
+
+    </p>
+  <p>
+        Examples in this specification are introduced with the words “for example”
+        or are set apart from the normative text with <code>class="example"</code>, like this:
+
+    </p>
+  <div class="example" id="example-ae2b6bc0"><a class="self-link" href="#example-ae2b6bc0"></a>
+        This is an example of an informative example.
+    </div>
+
+    
+  <p>
+        Informative notes begin with the word “Note”
+        and are set apart from the normative text with <code>class="note"</code>, like this:
+
+    </p>
+  <p class="note" role="note">
+        Note, this is an informative note.
+
+
+
+</p>
+  <h2 class="no-num heading settled" id="index"><span class="content">Index</span><a class="self-link" href="#index"></a></h2>
+  <h3 class="no-num heading settled" id="index-defined-elsewhere"><span class="content">Terms defined by reference</span><a class="self-link" href="#index-defined-elsewhere"></a></h3>
+  <ul class="indexlist">
+   <li><a data-link-type="biblio" href="#biblio-html">[HTML]</a> defines the following terms:
+    <ul>
+     <li><a href="https://html.spec.whatwg.org/multipage/infrastructure.html#in-parallel">in parallel</a>
+     <li><a href="https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-task">queue a task</a>
+    </ul>
+  </ul>
+  <h2 class="no-num heading settled" id="references"><span class="content">References</span><a class="self-link" href="#references"></a></h2>
+  <h3 class="no-num heading settled" id="normative"><span class="content">Normative References</span><a class="self-link" href="#normative"></a></h3>
+  <dl>
+   <dt id="biblio-ecmascript"><a class="self-link" href="#biblio-ecmascript"></a>[ECMASCRIPT]
+   <dd>Allen Wirfs-Brock. <a href="https://people.mozilla.org/~jorendorff/es6-draft.html">ECMA-262 6th Edition, The ECMAScript 2015 Language Specification</a>. June 2015. Standard. URL: <a href="https://people.mozilla.org/~jorendorff/es6-draft.html">https://people.mozilla.org/~jorendorff/es6-draft.html</a>
+   <dt id="biblio-html"><a class="self-link" href="#biblio-html"></a>[HTML]
+   <dd>Ian Hickson. <a href="https://html.spec.whatwg.org/multipage/">HTML Standard</a>. Living Standard. URL: <a href="https://html.spec.whatwg.org/multipage/">https://html.spec.whatwg.org/multipage/</a>
+   <dt id="biblio-webidl"><a class="self-link" href="#biblio-webidl"></a>[WebIDL]
+   <dd>Cameron McCormack. <a href="https://heycam.github.io/webidl/">Web IDL</a>. 19 April 2012. CR. URL: <a href="https://heycam.github.io/webidl/">https://heycam.github.io/webidl/</a>
+   <dt id="biblio-rfc2119"><a class="self-link" href="#biblio-rfc2119"></a>[RFC2119]
+   <dd>S. Bradner. <a href="https://tools.ietf.org/html/rfc2119">Key words for use in RFCs to Indicate Requirement Levels</a>. March 1997. Best Current Practice. URL: <a href="https://tools.ietf.org/html/rfc2119">https://tools.ietf.org/html/rfc2119</a>
+  </dl></body>
+</html>
